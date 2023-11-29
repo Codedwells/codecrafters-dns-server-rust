@@ -19,7 +19,7 @@ impl DNSHeader {
     pub fn new() -> Self {
         DNSHeader {
             packet_id: 1234, // Takes up 16 bits -> 2 bytes
-            qr_indicator: 0,
+            qr_indicator: 1,
             opcode: 0,
             authoritative_answer: 0,
             truncation: 0,
