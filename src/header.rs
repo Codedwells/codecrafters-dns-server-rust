@@ -16,24 +16,6 @@ pub struct DNSHeader {
 
 // Header is 12 bytes long and should be encoded using big endian.
 impl DNSHeader {
-    pub fn new() -> Self {
-        DNSHeader {
-            packet_id: 1234, // Takes up 16 bits -> 2 bytes
-            qr_indicator: 1,
-            opcode: 0,
-            authoritative_answer: 0,
-            truncation: 0,
-            recursion_desired: 0,
-            recursion_available: 0,
-            reserved: 0,
-            response_code: 0,
-            question_count: 0,
-            answer_record_count: 0,
-            authority_record_count: 0,
-            additional_record_count: 0,
-        }
-    }
-
     pub fn serialize(&self) -> Vec<u8> {
         let mut buf = Vec::new();
 
