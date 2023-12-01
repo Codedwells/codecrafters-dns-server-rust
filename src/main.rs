@@ -1,9 +1,11 @@
+mod answer;
 mod header;
 mod question;
 mod response;
 
+use answer::DNSAnswer;
 use header::DNSHeader;
-use question::DNSQuestion;
+use question::{DNSQueryClass, DNSQueryType, DNSQuestion};
 use response::DNSResponse;
 use std::net::UdpSocket;
 
@@ -29,17 +31,22 @@ fn main() {
                         reserved: 0,
                         response_code: 0,
                         question_count: 1,
-                        answer_record_count: 0,
+                        answer_record_count: 1,
                         authority_record_count: 0,
                         additional_record_count: 0,
                     },
                     question: DNSQuestion {
-                        domain_name: vec![
-                            "codecrafters".to_string(),
-                            "io".to_string(),
-                        ],
-                        query_type: question::DNSQueryType::A,
-                        query_class: question::DNSQueryClass::IN,
+                        domain_name: vec!["codecrafters".to_string(), "io".to_string()],
+                        query_type: DNSQueryType::A,
+                        query_class: DNSQueryClass::IN,
+                    },
+                    answer: DNSAnswer {
+                        name: vec!["codecrafters".to_string(), "io".to_string()],
+                        typ: DNSQueryType::A,
+                        class: DNSQueryClass::IN,
+                        ttl: 60,
+                        rdlength: 4,
+                        rdata: [8, 8, 8, 8].to_vec(),
                     },
                 }
                 .serialize();
