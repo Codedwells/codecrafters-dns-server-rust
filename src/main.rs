@@ -35,9 +35,8 @@ fn main() {
                     },
                     question: DNSQuestion {
                         domain_name: vec![
-                            "www".to_string(),
-                            "google".to_string(),
-                            "com".to_string(),
+                            "codecrafters".to_string(),
+                            "io".to_string(),
                         ],
                         query_type: question::DNSQueryType::A,
                         query_class: question::DNSQueryClass::IN,
