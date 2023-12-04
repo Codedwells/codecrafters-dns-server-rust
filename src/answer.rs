@@ -1,4 +1,5 @@
 use std::net::Ipv4Addr;
+use byteorder::{BigEndian, ByteOrder};
 
 use crate::question::{DNSQueryClass, DNSQueryType};
 
@@ -8,7 +9,7 @@ pub struct DNSAnswer {
     pub class: DNSQueryClass, // 2 bytes
     pub ttl: u32,             // 4 bytes
     pub rdlength: u16,        // 2 bytes
-    pub rdata: Vec<u8>,
+    pub rdata: Vec<u8>,       // variable size
 }
 
 impl DNSAnswer {

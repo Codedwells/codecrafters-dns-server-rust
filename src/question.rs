@@ -1,5 +1,7 @@
+use byteorder::{BigEndian, ByteOrder};
+
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum DNSQueryType {
     A = 1,
     NS = 2,
@@ -19,7 +21,7 @@ pub enum DNSQueryType {
 }
 
 #[allow(dead_code)]
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum DNSQueryClass {
     IN = 1,
     CS = 2,
@@ -51,6 +53,58 @@ impl DNSQuestion {
         buf
     }
 
+    pub fn deserilize(buf: &mut [u8; 512]) -> DNSQuestion {
+        // 12 bytes are reserved for the header
+        let mut offset = 12;
+
+        let mut domain_name = Vec::new();
+
+        loop {
+            let label_length = buf[offset] as usize;
+            offset += 1;
+
+            if label_length == 0 {
+                break;
+            }
+
+            let label = String::from_utf8_lossy(&buf[offset..offset + label_length]);
+            domain_name.push(label.to_string());
+            offset += label_length;
+        }
+
+        let query_type = BigEndian::read_u16(&buf[offset..offset + 2]);
+        offset += 2;
+        let query_class = BigEndian::read_u16(&buf[offset..offset + 2]);
+
+        DNSQuestion {
+            domain_name,
+            query_type: match query_type {
+                1 => DNSQueryType::A,
+                2 => DNSQueryType::NS,
+                3 => DNSQueryType::MD,
+                4 => DNSQueryType::MF,
+                5 => DNSQueryType::CNAME,
+                6 => DNSQueryType::SOA,
+                7 => DNSQueryType::MB,
+                8 => DNSQueryType::MR,
+                10 => DNSQueryType::NULL,
+                11 => DNSQueryType::WKS,
+                12 => DNSQueryType::PTR,
+                13 => DNSQueryType::HINFO,
+                14 => DNSQueryType::MINFO,
+                15 => DNSQueryType::MX,
+                16 => DNSQueryType::TXT,
+                _ => panic!("Unknown query type"),
+            },
+            query_class: match query_class {
+                1 => DNSQueryClass::IN,
+                2 => DNSQueryClass::CS,
+                3 => DNSQueryClass::CH,
+                4 => DNSQueryClass::HS,
+                _ => panic!("Unknown query class"),
+            },
+        }
+    }
 }
 
 fn split_u16_to_u8(input: u16) -> [u8; 2] {

@@ -25,6 +25,7 @@ fn main() {
 
                 // Handle received data
                 let parsed_header_bytes = DNSHeader::deserilize(&mut buf);
+                let parsed_question_bytes = DNSQuestion::deserilize(&mut buf);
 
                 // Construct DNS response
                 let response = DNSResponse {
@@ -48,7 +49,7 @@ fn main() {
                         additional_record_count: 0,
                     },
                     question: DNSQuestion {
-                        domain_name: vec!["codecrafters".to_string(), "io".to_string()],
+                        domain_name: parsed_question_bytes.domain_name,
                         query_type: DNSQueryType::A,
                         query_class: DNSQueryClass::IN,
                     },
