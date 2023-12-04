@@ -51,8 +51,7 @@ impl DNSHeader {
             let mut buffer: DNSHeader = std::mem::zeroed();
 
             let header_bytes = std::slice::from_raw_parts_mut(
-                &mut buffer as *mut _ as *mut u8,
-                std::mem::size_of::<DNSHeader>(),
+                &mut buffer as *mut _ as *mut u8,12,
             );
             header_bytes.copy_from_slice(&buf[0..12]);
 
