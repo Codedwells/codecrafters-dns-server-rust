@@ -29,6 +29,7 @@ pub enum DNSQueryClass {
     HS = 4,
 }
 
+#[derive(Clone)]
 pub struct DNSQuestion {
     pub domain_name: Vec<String>,
     pub query_type: DNSQueryType,

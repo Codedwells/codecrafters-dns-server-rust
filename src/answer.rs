@@ -1,8 +1,8 @@
 use std::net::Ipv4Addr;
-use byteorder::{BigEndian, ByteOrder};
 
 use crate::question::{DNSQueryClass, DNSQueryType};
 
+#[derive(Clone)]
 pub struct DNSAnswer {
     pub name: Vec<String>,    // Label sequence for domain name
     pub typ: DNSQueryType,    // 2 bytes

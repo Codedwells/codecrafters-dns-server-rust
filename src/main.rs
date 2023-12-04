@@ -49,12 +49,12 @@ fn main() {
                         additional_record_count: 0,
                     },
                     question: DNSQuestion {
-                        domain_name: parsed_question_bytes.domain_name,
+                        domain_name: parsed_question_bytes.domain_name.clone(),
                         query_type: DNSQueryType::A,
                         query_class: DNSQueryClass::IN,
                     },
                     answer: DNSAnswer {
-                        name: vec!["codecrafters".to_string(), "io".to_string()],
+                        name: parsed_question_bytes.domain_name.clone(),
                         typ: DNSQueryType::A,
                         class: DNSQueryClass::IN,
                         ttl: 60,
