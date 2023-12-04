@@ -33,7 +33,7 @@ impl DNSAnswer {
     }
 }
 
-pub fn ipv4_to_bytes(ip: Ipv4Addr) -> Vec<u8> {
+pub fn _ipv4_to_bytes(ip: Ipv4Addr) -> Vec<u8> {
     ip.octets().to_vec()
 }
 
