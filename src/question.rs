@@ -1,8 +1,7 @@
-use byteorder::{BigEndian, ByteOrder};
-use std::str::from_utf8;
+use crate::request::DNSRequest;
 
 #[allow(dead_code)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 #[repr(u16)]
 pub enum DNSQueryType {
     A = 1,
@@ -23,7 +22,7 @@ pub enum DNSQueryType {
 }
 
 #[allow(dead_code)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 #[repr(u16)]
 pub enum DNSQueryClass {
     IN = 1,
@@ -32,7 +31,7 @@ pub enum DNSQueryClass {
     HS = 4,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DNSQuestion {
     pub domain_name: Vec<String>,
     pub query_type: DNSQueryType,
@@ -90,13 +89,18 @@ impl DNSQuestion {
             current_position += 1;
 
             query_type = u16::from_be_bytes([buf[current_position], buf[current_position + 1]]);
-            query_class = u16::from_be_bytes([buf[current_position + 2], buf[current_position + 3]]);
+            query_class =
+                u16::from_be_bytes([buf[current_position + 2], buf[current_position + 3]]);
             current_position += 4;
 
             if buf[current_position] as u8 == 0 {
                 finished = true;
             }
         }
+
+        dbg!(&domain_name);
+        dbg!(&query_type);
+        dbg!(&query_class);
 
         DNSQuestion {
             domain_name: domain_name.split('.').map(|s| s.to_string()).collect(),
@@ -156,4 +160,36 @@ fn process_compressed_name(buf: &[u8], position: usize) -> (String, usize) {
 
 fn split_u16_to_u8(input: u16) -> [u8; 2] {
     [(input >> 8) as u8, input as u8]
+}
+
+#[test]
+fn test_deserialize_msg() {
+    let buffer = vec![
+        49, 192, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0, 3, 97, 98, 99, 17, 108, 111, 110, 103, 97, 115, 115,
+        100, 111, 109, 97, 105, 110, 110, 97, 109, 101, 3, 99, 111, 109, 0, 0, 1, 0, 1, 3, 100,
+        101, 102, 192, 16, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ];
+
+    let mut buf: [u8; 512] = [0; 512];
+    let len = buffer.len().min(buf.len());
+    buf[..len].copy_from_slice(&buffer[..len]);
+
+    let message = DNSRequest::deserialize(&mut buf);
+    let count = message.header.question_count;
+    dbg!(&message);
+    assert_eq!(count, 2);
+    assert_eq!(
+        message.questions[0].domain_name,
+        "abc.longassdomainname.com"
+            .split('.')
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+    );
+    assert_eq!(
+        message.questions[1].domain_name,
+        "def.longassdomainname.com"
+            .split('.')
+            .map(|s| s.to_string())
+            .collect::<Vec<String>>()
+    );
 }

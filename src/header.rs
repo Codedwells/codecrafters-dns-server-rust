@@ -1,6 +1,7 @@
 use byteorder::{BigEndian, ByteOrder};
 
 #[repr(C, packed)]
+#[derive(Debug)]
 pub struct DNSHeader {
     pub packet_id: u16,               // 16 bits
     pub qr_indicator: u8,             // 1 bit
