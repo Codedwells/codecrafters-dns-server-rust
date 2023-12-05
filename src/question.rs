@@ -55,25 +55,22 @@ impl DNSQuestion {
         buf
     }
 
-    pub fn deserialize(buf: &mut [u8; 512]) -> Self {
+    pub fn deserialize(buf: &mut [u8; 512],questions_count:u16) -> Self {
         // 12 bytes are reserved for the header
         let mut offset = 12;
 
-        // The dns question comes in compressed format -> We need to decompress it
-
-        let mut domain_name = Vec::new();
-
-        loop {
-            let label_length = buf[offset] as usize;
-            offset += 1;
-
-            if label_length == 0 {
-                break;
+        for _ in 0..questions_count {
+            let mut length = buf[offset] as usize;
+            while length != 0 {
+                if length & 0xC0 == 0xC0 {
+                    offset += 2;
+                    break;
+                }
+                offset += length + 1;
+                length = buf[offset] as usize;
             }
-
-            let label = String::from_utf8_lossy(&buf[offset..offset + label_length]);
-            domain_name.push(label.to_string());
-            offset += label_length;
+            offset += 1;
+            offset += 4;
         }
 
         let (domain_name, new_offset) = process_compressed_name(buf, offset);

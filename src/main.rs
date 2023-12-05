@@ -25,7 +25,8 @@ fn main() {
 
                 // Handle received data
                 let parsed_header_bytes = DNSHeader::deserialize(&mut buf);
-                let parsed_question_bytes = DNSQuestion::deserialize(&mut buf);
+                let parsed_question_bytes =
+                    DNSQuestion::deserialize(&mut buf, parsed_header_bytes.question_count);
 
                 // Construct DNS response
                 let response = DNSResponse {
