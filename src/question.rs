@@ -57,33 +57,46 @@ impl DNSQuestion {
         buf
     }
 
-    pub fn deserialize(buf: &mut [u8; 512],questions_count:u16) -> Self {
+    pub fn deserialize(buf: &mut [u8; 512]) -> Self {
         // 12 bytes are reserved for the header
-        let mut offset = 12;
+        let mut finished = false;
+        let mut current_position: usize = (12) as usize;
+        let mut domain_name: String = String::new();
+        let mut query_type: u16 = 1;
+        let mut query_class: u16 = 1;
 
-        for _ in 0..questions_count {
-            let mut length = buf[offset] as usize;
+        while !finished {
+            let mut length = buf[current_position] as usize;
+
             while length != 0 {
-                if length & 0xC0 == 0xC0 {
-                    offset += 2;
+                let compressed = (buf[current_position] & 0b11000000) != 0;
+
+                if compressed {
+                    current_position += 1;
+                    let pointer = buf[current_position] as usize;
+                    let (returned_name, _) = &process_compressed_name(buf, pointer);
+                    domain_name += returned_name;
                     break;
+                } else {
+                    let (returned_name, updated_pos) =
+                        process_compressed_name(buf, current_position);
+
+                    domain_name += &returned_name;
+
+                    current_position = updated_pos;
                 }
-                offset += length + 1;
-                length = buf[offset] as usize;
+                length = buf[current_position] as usize;
             }
-            offset += 1;
-            offset += 4;
+            current_position += 1;
+
+            query_type = u16::from_be_bytes([buf[current_position], buf[current_position + 1]]);
+            query_class = u16::from_be_bytes([buf[current_position + 2], buf[current_position + 3]]);
+            current_position += 4;
+
+            if buf[current_position] as u8 == 0 {
+                finished = true;
+            }
         }
-
-        let (domain_name, new_offset) = process_compressed_name(buf, offset);
-        offset = new_offset;
-
-        let query_type = BigEndian::read_u16(&buf[offset..offset + 2]);
-        offset += 2;
-        let query_class = BigEndian::read_u16(&buf[offset..offset + 2]);
-
-        dbg!(query_type);
-        dbg!(query_class);
 
         DNSQuestion {
             domain_name: domain_name.split('.').map(|s| s.to_string()).collect(),
@@ -116,32 +129,29 @@ impl DNSQuestion {
     }
 }
 
-fn process_compressed_name(buffer: &[u8], position: usize) -> (String, usize) {
-    let mut offset = position;
-    let mut name = String::new();
-    loop {
-        let length = buffer[offset] as usize;
-        if length == 0 {
+fn process_compressed_name(buf: &[u8], position: usize) -> (String, usize) {
+    let mut length = buf[position] as usize;
+    let mut name: String = String::new();
+    let mut current_position = position;
+
+    while length != 0 {
+        current_position += 1;
+        name +=
+            &String::from_utf8(buf[current_position..current_position + length].to_vec()).unwrap();
+        current_position += length;
+        length = buf[current_position] as usize;
+
+        let compressed = (buf[current_position] & 0b11000000) != 0;
+        if compressed {
+            name += ".";
             break;
         }
-        if !name.is_empty() {
-            name.push('.');
+        if length != 0 {
+            name += ".";
         }
-        if length & 0xC0 == 0xC0 {
-            let next = u16::from_be_bytes(buffer[offset..offset + 2].try_into().unwrap()) & 0x3FFF;
-            let (next_name, _) = process_compressed_name(buffer, next as usize);
-            name.push_str(&next_name);
-            offset += 1;
-            break;
-        }
-        let next = match from_utf8(&buffer[offset + 1..offset + 1 + length]) {
-            Ok(s) => s,
-            Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-        };
-        name.push_str(next);
-        offset += length + 1;
     }
-    (name, offset + 1)
+
+    (name, current_position)
 }
 
 fn split_u16_to_u8(input: u16) -> [u8; 2] {
