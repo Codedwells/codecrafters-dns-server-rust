@@ -3,6 +3,7 @@ use std::str::from_utf8;
 
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
+#[repr(u16)]
 pub enum DNSQueryType {
     A = 1,
     NS = 2,
@@ -23,6 +24,7 @@ pub enum DNSQueryType {
 
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
+#[repr(u16)]
 pub enum DNSQueryClass {
     IN = 1,
     CS = 2,
