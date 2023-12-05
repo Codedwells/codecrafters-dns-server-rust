@@ -1,4 +1,5 @@
-use byteorder::{BigEndian, ByteOrder};
+use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
+use std::io::Cursor;
 
 #[allow(dead_code)]
 #[derive(Copy, Clone)]
@@ -54,7 +55,7 @@ impl DNSQuestion {
         buf
     }
 
-    pub fn deserilize(buf: &mut [u8; 512]) -> DNSQuestion {
+    pub fn deserialize(buf: &mut [u8; 512]) -> Self {
         // 12 bytes are reserved for the header
         let mut offset = 12;
 
@@ -62,11 +63,22 @@ impl DNSQuestion {
 
         loop {
             let label_length = buf[offset] as usize;
-            offset += 1;
 
             if label_length == 0 {
                 break;
             }
+
+            if (label_length & 0b1100_0000) == 0b1100_0000 {
+                // Compression pointer
+                let mut cursor = Cursor::new(&buf[offset..offset + 2]);
+                let pointer = (cursor.read_u16::<BigEndian>().unwrap() & 0x3FFF) as usize;
+
+                // Follow the pointer and continue parsing
+                offset = pointer;
+                continue;
+            }
+
+            offset += 1;
 
             let label = String::from_utf8_lossy(&buf[offset..offset + label_length]);
             domain_name.push(label.to_string());

@@ -46,13 +46,11 @@ impl DNSHeader {
         buf
     }
 
-    pub fn deserilize(buf:&mut [u8; 512]) -> DNSHeader {
+    pub fn deserialize(buf: &mut [u8; 512]) -> DNSHeader {
         unsafe {
             let mut buffer: DNSHeader = std::mem::zeroed();
 
-            let header_bytes = std::slice::from_raw_parts_mut(
-                &mut buffer as *mut _ as *mut u8,12,
-            );
+            let header_bytes = std::slice::from_raw_parts_mut(&mut buffer as *mut _ as *mut u8, 12);
             header_bytes.copy_from_slice(&buf[0..12]);
 
             // Byte 0..2 are packet_id -> 16 bits
@@ -60,15 +58,15 @@ impl DNSHeader {
 
             // Byte 2..4  are (qr_indicator -> 1bit, opcode -> 4bits, authoritative_answer -> 1 bit, truncation -> 1 bit, recursion_desired -> 1 bit)
             buffer.qr_indicator = buf[2] >> 7;
-            buffer.opcode = (buf[2] >> 3) & 0b00001111;
-            buffer.authoritative_answer = (buf[2] >> 2) & 0b00000001;
-            buffer.truncation = (buf[2] >> 1) & 0b00000001;
-            buffer.recursion_desired = buf[2] & 0b00000001;
+            buffer.opcode = (buf[2] >> 3) & 0b0000_1111;
+            buffer.authoritative_answer = (buf[2] >> 2) & 0b0000_0001;
+            buffer.truncation = (buf[2] >> 1) & 0b0000_0001;
+            buffer.recursion_desired = buf[2] & 0b0000_0001;
 
             // Byte 3..4 are (recursion_available -> 1 bit, reserved -> 3 bits, response_code -> 4 bits)
             buffer.recursion_available = buf[3] >> 7;
             buffer.reserved = (buf[3] >> 4) & 0b00000111;
-            buffer.response_code = buf[3] & 0b00001111;
+            buffer.response_code = buf[3] & 0b0000_1111;
 
             // Byte 4..6 are question_count -> 16 bits
             buffer.question_count = BigEndian::read_u16(&buf[4..6]);

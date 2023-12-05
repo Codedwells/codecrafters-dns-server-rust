@@ -24,8 +24,8 @@ fn main() {
                 println!("Received {} bytes from {}", size, source);
 
                 // Handle received data
-                let parsed_header_bytes = DNSHeader::deserilize(&mut buf);
-                let parsed_question_bytes = DNSQuestion::deserilize(&mut buf);
+                let parsed_header_bytes = DNSHeader::deserialize(&mut buf);
+                let parsed_question_bytes = DNSQuestion::deserialize(&mut buf);
 
                 // Construct DNS response
                 let response = DNSResponse {
