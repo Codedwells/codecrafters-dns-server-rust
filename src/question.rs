@@ -82,6 +82,9 @@ impl DNSQuestion {
         offset += 2;
         let query_class = BigEndian::read_u16(&buf[offset..offset + 2]);
 
+        dbg!(query_type);
+        dbg!(query_class);
+
         DNSQuestion {
             domain_name: domain_name.split('.').map(|s| s.to_string()).collect(),
             query_type: match query_type {
