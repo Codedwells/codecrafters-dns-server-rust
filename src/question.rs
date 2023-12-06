@@ -31,7 +31,7 @@ pub enum DNSQueryClass {
 
 #[derive(Clone, Debug)]
 pub struct DNSQuestion {
-    pub domain_name: Vec<String>,
+    pub domain_name: String,
     pub query_type: DNSQueryType,
     pub query_class: DNSQueryClass,
 }
@@ -40,9 +40,10 @@ impl DNSQuestion {
     pub fn serialize(&self) -> Vec<u8> {
         let mut buf = Vec::new();
 
-        for label in self.domain_name.iter() {
-            buf.push(label.len() as u8);
-            buf.extend_from_slice(label.as_bytes());
+        let mut pieces = self.domain_name.split(".");
+        while let Some(piece) = pieces.next() {
+            buf.push(piece.len() as u8);
+            buf.extend_from_slice(piece.as_bytes());
         }
 
         // Null terminator
@@ -54,11 +55,11 @@ impl DNSQuestion {
         buf
     }
 
-    pub fn deserialize(buf: &mut [u8; 512]) -> Self {
+    pub fn deserialize(buf: &mut [u8; 512]) -> Vec<Self> {
         // 12 bytes are reserved for the header
         let mut finished = false;
         let mut current_position: usize = (12) as usize;
-        let mut domain: Vec<String> = Vec::new();
+        let mut res = Vec::new();
         let mut query_type: u16 = 1;
         let mut query_class: u16 = 1;
 
@@ -74,14 +75,12 @@ impl DNSQuestion {
                     let pointer = buf[current_position] as usize;
                     let (returned_name, _) = &process_compressed_name(buf, pointer);
                     domain_name += returned_name;
-                    domain.push(domain_name.split('.').map(|s| s.to_string()).collect());
                     break;
                 } else {
                     let (returned_name, updated_pos) =
                         process_compressed_name(buf, current_position);
 
                     domain_name += &returned_name;
-                    domain.push(domain_name.split('.').map(|s| s.to_string()).collect());
 
                     current_position = updated_pos;
                 }
@@ -92,6 +91,40 @@ impl DNSQuestion {
             query_type = u16::from_be_bytes([buf[current_position], buf[current_position + 1]]);
             query_class =
                 u16::from_be_bytes([buf[current_position + 2], buf[current_position + 3]]);
+
+            dbg!(&query_type);
+            dbg!(&query_class);
+            dbg!(&domain_name);
+
+            DNSQuestion {
+                domain_name,
+                query_type: match query_type {
+                    1 => DNSQueryType::A,
+                    2 => DNSQueryType::NS,
+                    3 => DNSQueryType::MD,
+                    4 => DNSQueryType::MF,
+                    5 => DNSQueryType::CNAME,
+                    6 => DNSQueryType::SOA,
+                    7 => DNSQueryType::MB,
+                    8 => DNSQueryType::MR,
+                    10 => DNSQueryType::NULL,
+                    11 => DNSQueryType::WKS,
+                    12 => DNSQueryType::PTR,
+                    13 => DNSQueryType::HINFO,
+                    14 => DNSQueryType::MINFO,
+                    15 => DNSQueryType::MX,
+                    16 => DNSQueryType::TXT,
+                    _ => panic!("Unknown query type"),
+                },
+                query_class: match query_class {
+                    1 => DNSQueryClass::IN,
+                    2 => DNSQueryClass::CS,
+                    3 => DNSQueryClass::CH,
+                    4 => DNSQueryClass::HS,
+                    _ => panic!("Unknown query class"),
+                },
+            };
+
             current_position += 4;
 
             if buf[current_position] as u8 == 0 {
@@ -99,38 +132,7 @@ impl DNSQuestion {
             }
         }
 
-        dbg!(&domain);
-        dbg!(&query_type);
-        dbg!(&query_class);
-
-        DNSQuestion {
-            domain_name: domain,
-            query_type: match query_type {
-                1 => DNSQueryType::A,
-                2 => DNSQueryType::NS,
-                3 => DNSQueryType::MD,
-                4 => DNSQueryType::MF,
-                5 => DNSQueryType::CNAME,
-                6 => DNSQueryType::SOA,
-                7 => DNSQueryType::MB,
-                8 => DNSQueryType::MR,
-                10 => DNSQueryType::NULL,
-                11 => DNSQueryType::WKS,
-                12 => DNSQueryType::PTR,
-                13 => DNSQueryType::HINFO,
-                14 => DNSQueryType::MINFO,
-                15 => DNSQueryType::MX,
-                16 => DNSQueryType::TXT,
-                _ => panic!("Unknown query type"),
-            },
-            query_class: match query_class {
-                1 => DNSQueryClass::IN,
-                2 => DNSQueryClass::CS,
-                3 => DNSQueryClass::CH,
-                4 => DNSQueryClass::HS,
-                _ => panic!("Unknown query class"),
-            },
-        }
+        res
     }
 }
 
@@ -162,4 +164,3 @@ fn process_compressed_name(buf: &[u8], position: usize) -> (String, usize) {
 fn split_u16_to_u8(input: u16) -> [u8; 2] {
     [(input >> 8) as u8, input as u8]
 }
-

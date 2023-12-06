@@ -2,7 +2,6 @@ mod answer;
 mod header;
 mod question;
 mod response;
-mod request;
 
 use answer::DNSAnswer;
 use header::DNSHeader;
